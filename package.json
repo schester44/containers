@@ -1,0 +1,20 @@
+{
+  "name": "container-tui",
+  "version": "0.1.0",
+  "description": "A minimal Docker-Desktop-like TUI for Apple containers",
+  "type": "module",
+  "bin": {
+    "container-tui": "./bin/container-tui.js"
+  },
+  "scripts": {
+    "start": "tsx src/main.tsx"
+  },
+  "dependencies": {
+    "ink": "^6.0.0",
+    "react": "^19.0.0",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0"
+  }
+}
