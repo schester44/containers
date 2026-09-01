@@ -1,40 +1,43 @@
 # container-tui
 
-A minimal Docker-Desktop-style TUI for [Apple containers](https://github.com/apple/container), built with React Ink.
+A terminal UI for [Apple containers](https://github.com/apple/container). Lists containers and lets you view logs, inspect, start, stop, kill, and delete them.
 
 ## Requirements
 
-- `container` CLI (`brew install container`) with services running (`container system start`)
+- macOS with the `container` CLI (`brew install container`), services running (`container system start`)
 - Node.js 20+
+- Yarn
 
-## Run
+## Usage
 
 ```bash
 yarn install
-yarn start          # or: yarn tsx src/main.tsx
+yarn start
 ```
 
-## Keys
+The list refreshes every 2 seconds and shows state, IP, CPUs, memory, and uptime.
 
-### List view
+### Keys
+
+**List view**
+
 | Key | Action |
 |-----|--------|
 | `↑`/`↓` or `k`/`j` | Select container |
-| `⏎` / `i` | Inspect (full JSON) |
-| `l` | Logs (follows tail, auto-refreshes) |
-| `s` | Stop (graceful) |
-| `x` | Kill (SIGKILL, with confirm) |
+| `⏎` / `i` | Inspect (JSON) |
+| `l` | Logs (follows tail) |
+| `s` | Stop |
+| `x` | Kill (confirms first) |
 | `u` | Start a stopped container |
-| `d` | Delete a stopped container (with confirm) |
-| `r` | Refresh now |
+| `d` | Delete a stopped container (confirms first) |
+| `r` | Refresh |
 | `q` | Quit |
 
-### Logs / Inspect view
+**Logs / inspect view**
+
 | Key | Action |
 |-----|--------|
 | `↑`/`↓`, `PgUp`/`PgDn` | Scroll |
-| `g` | Jump to top |
+| `g` | Top |
 | `G` / `f` | Follow tail |
-| `q` / `esc` | Back to list |
-
-The container list auto-refreshes every 2 seconds and shows state, IP, CPUs, memory, and uptime.
+| `q` / `esc` | Back |
