@@ -10,8 +10,8 @@ A minimal Docker-Desktop-style TUI for [Apple containers](https://github.com/app
 ## Run
 
 ```bash
-npm install
-npm start          # or: npx tsx src/main.tsx
+yarn install
+yarn start          # or: yarn tsx src/main.tsx
 ```
 
 ## Keys

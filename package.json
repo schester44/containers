@@ -3,9 +3,8 @@
   "version": "0.1.0",
   "description": "A minimal Docker-Desktop-like TUI for Apple containers",
   "type": "module",
-  "bin": {
-    "container-tui": "./bin/container-tui.js"
-  },
+  "bin": "./bin/container-tui.js",
+  "packageManager": "yarn@4.16.0",
   "scripts": {
     "start": "tsx src/main.tsx"
   },
