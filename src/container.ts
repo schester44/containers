@@ -60,10 +60,28 @@ export async function inspectContainer(id: string): Promise<string> {
   }
 }
 
-export const killContainer = (id: string) => run(["kill", id]);
+export async function killContainer(id: string): Promise<string> {
+  try {
+    return await run(["kill", id]);
+  } catch (e) {
+    // Container already exited between confirm prompt and kill — goal achieved.
+    if (/not running/i.test((e as Error).message)) return "";
+    throw e;
+  }
+}
 export const stopContainer = (id: string) => run(["stop", id], 30_000);
 export const startContainer = (id: string) => run(["start", id], 60_000);
 export const deleteContainer = (id: string) => run(["delete", id]);
+
+// The container CLI nests errors like:
+//   internalError: "failed to kill" (cause: "invalidState: "cannot kill: ..."")
+// Extract the innermost cause for readable messages.
+export function friendlyError(e: unknown): string {
+  let msg = e instanceof Error ? e.message : String(e);
+  const causes = [...msg.matchAll(/\(cause:\s*"(?:\w+:\s*)?"?([^"]+)"?"?\)/g)];
+  if (causes.length > 0) msg = causes[causes.length - 1][1];
+  return msg.replace(/^Error:\s*/, "").replace(/^\w+:\s*"?/, "").replace(/"+$/, "").trim() || "unknown error";
+}
 
 export function shortImage(ref?: string): string {
   if (!ref) return "-";

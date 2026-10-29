@@ -6,6 +6,7 @@ import {
   fetchLogs,
   inspectContainer,
   killContainer,
+  friendlyError,
   stopContainer,
   startContainer,
   deleteContainer,
@@ -53,6 +54,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<null | { label: string; run: () => Promise<unknown> }>(null);
+  const [marked, setMarked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -95,6 +97,15 @@ function App() {
   useEffect(() => {
     setSelected((s) => Math.min(s, Math.max(0, containers.length - 1)));
   }, [containers.length]);
+
+  // Drop marks for containers that no longer exist
+  useEffect(() => {
+    setMarked((m) => {
+      const ids = new Set(containers.map((c) => c.id));
+      const next = new Set([...m].filter((id) => ids.has(id)));
+      return next.size === m.size ? m : next;
+    });
+  }, [containers]);
 
   // Poll logs while in logs view
   useEffect(() => {
@@ -146,7 +157,7 @@ function App() {
       setBusy(true);
       fn(id)
         .then(() => showFlash(`${label} ${id} ✓`))
-        .catch((e) => showFlash(`${label} ${id} failed: ${(e as Error).message}`))
+        .catch((e) => showFlash(`${label} ${id} failed: ${friendlyError(e)}`))
         .finally(() => {
           setBusy(false);
           refresh();
@@ -164,7 +175,7 @@ function App() {
         setBusy(true);
         a.run()
           .then(() => showFlash(`${a.label} ✓`))
-          .catch((e) => showFlash(`${a.label} failed: ${(e as Error).message}`))
+          .catch((e) => showFlash(`${a.label} failed: ${friendlyError(e)}`))
           .finally(() => {
             setBusy(false);
             refresh();
@@ -203,6 +214,45 @@ function App() {
     if (input === "i" || key.return) openInspect();
     if (input === "r") refresh();
 
+    if (input === " " && current && current.status?.state !== "running") {
+      setMarked((m) => {
+        const next = new Set(m);
+        if (next.has(current.id)) next.delete(current.id);
+        else next.add(current.id);
+        return next;
+      });
+      setSelected((s) => Math.min(containers.length - 1, s + 1));
+      return;
+    }
+
+    if (input === "d" && !busy) {
+      const byId = new Map(containers.map((c) => [c.id, c]));
+      const targets =
+        marked.size > 0
+          ? [...marked].filter((id) => byId.get(id)?.status?.state !== "running")
+          : current && current.status?.state !== "running"
+            ? [current.id]
+            : [];
+      if (targets.length === 0) return;
+      setBusy(true);
+      Promise.allSettled(targets.map((id) => deleteContainer(id)))
+        .then((results) => {
+          const failed = results.filter((r) => r.status === "rejected").length;
+          if (failed === 0) {
+            showFlash(targets.length === 1 ? `delete ${targets[0]} ✓` : `deleted ${targets.length} containers ✓`);
+          } else {
+            const firstErr = results.find((r) => r.status === "rejected") as PromiseRejectedResult;
+            showFlash(`delete failed for ${failed}/${targets.length}: ${friendlyError(firstErr.reason)}`);
+          }
+        })
+        .finally(() => {
+          setMarked(new Set());
+          setBusy(false);
+          refresh();
+        });
+      return;
+    }
+
     if (current) {
       const state = current.status?.state;
       if (input === "x" && state === "running") {
@@ -213,9 +263,6 @@ function App() {
       }
       if (input === "u" && state !== "running") {
         doAction("start", startContainer);
-      }
-      if (input === "d" && state !== "running") {
-        setConfirmAction({ label: `delete ${current.id}`, run: () => deleteContainer(current.id) });
       }
     }
   });
@@ -287,6 +334,7 @@ function App() {
         {visibleContainers.map((c, i) => {
           const idx = listStart + i;
           const isSel = idx === selected;
+          const isMarked = marked.has(c.id);
           const state = c.status?.state ?? "?";
           const cmd = "";
           const row = `${pad(c.id, nameW)} ${pad(shortImage(c.configuration.image?.reference), imageW)} ${pad(
@@ -298,8 +346,10 @@ function App() {
           )} ${pad(uptimeLabel(c), 8)}${cmd}`;
           return (
             <Text key={c.id} wrap="truncate-end" inverse={isSel}>
-              <Text color={isSel ? undefined : "cyan"}>{isSel ? "▶ " : "  "}</Text>
-              <Text color={isSel ? undefined : stateColor(state)}>{row}</Text>
+              <Text color={isSel ? undefined : isMarked ? "magenta" : "cyan"}>
+                {isMarked ? "✔" : isSel ? "▶" : " "}{" "}
+              </Text>
+              <Text color={isSel ? undefined : isMarked ? "magenta" : stateColor(state)}>{row}</Text>
             </Text>
           );
         })}
@@ -319,7 +369,7 @@ function App() {
       ) : (
         <Text dimColor>
           {" "}
-          ↑/↓ select · ⏎/i inspect · l logs · s stop · x kill · u start · d delete · r refresh · q quit
+          ↑/↓ select · ⏎/i inspect · l logs · s stop · x kill · u start · ␣ mark · d delete{marked.size > 0 ? ` (${marked.size})` : ""} · r refresh · q quit
         </Text>
       )}
     </Box>

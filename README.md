@@ -8,7 +8,19 @@ A terminal UI for [Apple containers](https://github.com/apple/container). Lists 
 - Node.js 20+
 - Yarn
 
-## Usage
+## Install
+
+### Homebrew
+
+```bash
+brew tap schester44/container-tui https://github.com/schester44/container-tui
+brew install --HEAD container-tui
+tainer
+```
+
+(Once a release is tagged and the `url`/`sha256` in `Formula/container-tui.rb` are filled in, `--HEAD` is no longer needed.)
+
+### From source
 
 ```bash
 yarn install
